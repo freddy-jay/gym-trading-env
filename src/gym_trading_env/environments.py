@@ -6,11 +6,10 @@ import datetime
 import glob
 from pathlib import Path    
 
-from collections import Counter
 from .utils.history import History
-from .utils.portfolio import Portfolio, TargetPortfolio
+from .utils.portfolio import TargetPortfolio
 
-import tempfile, os
+import os
 import warnings
 warnings.filterwarnings("error")
 
@@ -169,7 +168,8 @@ class TradingEnv(gym.Env):
         
 
         self._idx = 0
-        if self.windows is not None: self._idx = self.windows - 1
+        if self.windows is not None:
+            self._idx = self.windows - 1
         if self.max_episode_duration != 'max':
             self._idx = np.random.randint(
                 low = self._idx, 
@@ -219,8 +219,9 @@ class TradingEnv(gym.Env):
             ticker = self._get_ticker()
             for position, params in self._limit_orders.items():
                 if position != self._position and params['limit'] <= ticker["high"] and params['limit'] >= ticker["low"]:
-                    self._trade(position, price= params['limit'])
-                    if not params['persistent']: del self._limit_orders[position]
+                    self._trade(position, price=params['limit'])
+                    if not params['persistent']:
+                        del self._limit_orders[position]
 
 
     
@@ -230,8 +231,9 @@ class TradingEnv(gym.Env):
             'persistent': persistent
         }
     
-    def step(self, position_index = None):
-        if position_index is not None: self._take_action(self.positions[position_index])
+    def step(self, position_index=None):
+        if position_index is not None:
+            self._take_action(self.positions[position_index])
         self._idx += 1
         self._step += 1
 
@@ -241,10 +243,10 @@ class TradingEnv(gym.Env):
         portfolio_value = self._portfolio.valorisation(price)
         portfolio_distribution = self._portfolio.get_portfolio_distribution()
 
-        done, truncated = False, False
+        terminated, truncated = False, False
 
         if portfolio_value <= 0:
-            done = True
+            terminated = True
         if self._idx >= len(self.df) - 1:
             truncated = True
         if isinstance(self.max_episode_duration,int) and self._step >= self.max_episode_duration - 1:
@@ -262,14 +264,14 @@ class TradingEnv(gym.Env):
             portfolio_distribution = portfolio_distribution, 
             reward = 0
         )
-        if not done:
+        if not terminated:
             reward = self.reward_function(self.historical_info)
             self.historical_info["reward", -1] = reward
 
-        if done or truncated:
+        if terminated or truncated:
             self.calculate_metrics()
             self.log()
-        return self._get_obs(),  self.historical_info["reward", -1], done, truncated, self.historical_info[-1]
+        return self._get_obs(),  self.historical_info["reward", -1], terminated, truncated, self.historical_info[-1]
 
     def add_metric(self, name, function):
         self.log_metrics.append({
@@ -301,9 +303,10 @@ class TradingEnv(gym.Env):
         )
         history_df.set_index("date", inplace= True)
         history_df.sort_index(inplace = True)
-        render_df = self.df.join(history_df, how = "inner")
-        
-        if not os.path.exists(dir):os.makedirs(dir)
+        render_df = self.df.join(history_df, how="inner")
+
+        if not os.path.exists(dir):
+            os.makedirs(dir)
         render_df.to_pickle(f"{dir}/{self.name}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.pkl")
 
 class MultiDatasetTradingEnv(TradingEnv):
@@ -372,22 +375,25 @@ class MultiDatasetTradingEnv(TradingEnv):
         self.dataset_dir = dataset_dir
         self.preprocess = preprocess
         self.episodes_between_dataset_switch = episodes_between_dataset_switch
-        self.dataset_pathes = glob.glob(self.dataset_dir)
-        if len(self.dataset_pathes) == 0:raise FileNotFoundError(f"No dataset found with the path : {self.dataset_dir}")
-        self.dataset_nb_uses = np.zeros(shape=(len(self.dataset_pathes), ))
+        self.dataset_paths = glob.glob(self.dataset_dir)
+        if len(self.dataset_paths) == 0:
+            raise FileNotFoundError(f"No dataset found with the path : {self.dataset_dir}")
+        self.dataset_nb_uses = np.zeros(shape=(len(self.dataset_paths),))
         super().__init__(self.next_dataset(), *args, **kwargs)
 
     def next_dataset(self):
         self._episodes_on_this_dataset = 0
         # Find the indexes of the less explored dataset
-        potential_dataset_pathes = np.where(self.dataset_nb_uses == self.dataset_nb_uses.min())[0]
+        potential_dataset_paths = np.where(self.dataset_nb_uses == self.dataset_nb_uses.min())[0]
         # Pick one of them
-        random_int = np.random.randint(potential_dataset_pathes.size)
-        dataset_idx = potential_dataset_pathes[ random_int ]
-        dataset_path = self.dataset_pathes[dataset_idx]
+        random_int = np.random.randint(potential_dataset_paths.size)
+        dataset_idx = potential_dataset_paths[ random_int ]
+        dataset_path = self.dataset_paths[dataset_idx]
         self.dataset_nb_uses[dataset_idx] += 1 # Update nb use counts
 
         self.name = Path(dataset_path).name
+        if dataset_path.endswith(".csv"):
+            return self.preprocess(pd.read_csv(dataset_path, index_col= 0, parse_dates= True))
         return self.preprocess(pd.read_pickle(dataset_path))
 
     def reset(self, seed=None, options = None, **kwargs):
@@ -396,6 +402,7 @@ class MultiDatasetTradingEnv(TradingEnv):
             self._set_df(
                 self.next_dataset()
             )
-        if self.verbose > 1: print(f"Selected dataset {self.name} ...")
-        return super().reset(seed = seed, options = options, **kwargs)
+        if self.verbose > 1:
+            print(f"Selected dataset {self.name} ...")
+        return super().reset(seed=seed, options=options, **kwargs)
     

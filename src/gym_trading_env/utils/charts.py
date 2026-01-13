@@ -1,11 +1,6 @@
 import pyecharts.options as opts
 from pyecharts.charts import Candlestick, Bar, Grid, Line
-from pyecharts.components import Table
-from pyecharts.commons.utils import JsCode
-from pyecharts.globals import ThemeType
-import numpy as np
 
-import pandas as pd
 
 def charts(df, lines = []):
     line_key = "ievi4G3vG678Vszad"
@@ -28,7 +23,8 @@ def charts(df, lines = []):
         "rewards": {"height":9, "top":89},
     }
     for data in architecture.values():
-        for key in list(data.keys()):data[key + "_%"] = str(data[key]) + "%"
+        for key in list(data.keys()):
+            data[key + "_%"] = str(data[key]) + "%"
 
     candlesticks = (
         Candlestick()
@@ -333,7 +329,7 @@ def charts(df, lines = []):
         ),
     )
 
-    grid_global = Grid(
+    Grid(
         init_opts=opts.InitOpts(
             # width="950px",
             # height="700px",

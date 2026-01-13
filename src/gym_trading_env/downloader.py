@@ -2,7 +2,6 @@ import asyncio
 import ccxt.async_support as ccxt
 import pandas as pd
 import datetime
-import numpy as np
 import nest_asyncio
 nest_asyncio.apply()
 import sys 
@@ -72,10 +71,14 @@ async def _download_symbols(exchange_name, symbols, dir, timeframe,  **kwargs):
 async def _download(exchange_names, symbols, timeframe, dir, since : datetime.datetime, until : datetime.datetime = datetime.datetime.now()):
     tasks = []
     for exchange_name in exchange_names:
-        
-        limit = EXCHANGE_LIMIT_RATES[exchange_name]["limit"]
-        pause_every = EXCHANGE_LIMIT_RATES[exchange_name]["pause_every"]
-        pause = EXCHANGE_LIMIT_RATES[exchange_name]["pause"]
+        exchange_params = EXCHANGE_LIMIT_RATES.get(exchange_name, {
+            "limit": 1000,
+            "pause_every": 10,
+            "pause": 1,
+        })
+        limit = exchange_params["limit"]
+        pause_every = exchange_params["pause_every"]
+        pause = exchange_params["pause"]
         tasks.append(
             _download_symbols(
                 exchange_name = exchange_name, symbols= symbols, timeframe= timeframe, dir = dir,
