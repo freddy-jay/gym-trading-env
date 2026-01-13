@@ -58,6 +58,36 @@ Or using git :
 git clone https://github.com/ClementPerroud/Gym-Trading-Env
 ```
 
+Minimal Example
+---------------
+
+```python
+import gymnasium as gym
+import gym_trading_env
+import pandas as pd
+
+# 1. Prepare your data
+# The DataFrame must contain 'open', 'high', 'low', 'close' columns.
+df = pd.read_csv("https://raw.githubusercontent.com/ClementPerroud/Gym-Trading-Env/main/examples/data/BTC_USD-Hourly.csv", parse_dates=["date"], index_col= "date")
+df.sort_index(inplace= True)
+
+# 2. Design features
+# The column names of your features must contain the keyword 'feature'.
+df["feature_close"] = df["close"].pct_change()
+df["feature_open"] = df["open"]/df["close"]
+df.dropna(inplace= True)
+
+# 3. Create the environment
+env = gym.make('TradingEnv', df=df, positions=[-1, 0, 1], portfolio_initial_value=1000)
+
+# 4. Run the environment
+observation, info = env.reset()
+done, truncated = False, False
+while not (done or truncated):
+    action = env.action_space.sample()
+    observation, reward, done, truncated, info = env.step(action)
+```
+
 
 [Documentation available here](https://gym-trading-env.readthedocs.io/en/latest/index.html)
 -----------------------------------------------------------------------------------------------

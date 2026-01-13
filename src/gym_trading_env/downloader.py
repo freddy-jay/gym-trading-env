@@ -1,12 +1,14 @@
 import asyncio
+import sys
 import ccxt.async_support as ccxt
 import pandas as pd
 import datetime
 import nest_asyncio
+
 nest_asyncio.apply()
-import sys 
+
 if sys.platform == 'win32':
-	asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
     
 EXCHANGE_LIMIT_RATES = {
     "bitfinex2": {
